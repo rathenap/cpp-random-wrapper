@@ -1,20 +1,32 @@
-#pragma once
+#ifndef _____RANDGEN_H_____
+#define _____RANDGEN_H_____
+
 #include <random>
 #include <memory>
 
 class Randgen {
 public:
-	Randgen();
-	Randgen(uint64_t seed, uint64_t discard_time = 0);
-	~Randgen();
+	Randgen() :
+		gen_time(0) {
+		std::random_device seed_generator;
+		this->seed = seed_generator();
+		this->mt_engine.seed(this->seed);
+	}
+	Randgen(uint64_t seed, uint64_t discard_time = 0) :
+		seed(seed),
+		gen_time(0) {
+		this->mt_engine.seed(this->seed);
+		this->mt_engine.discard(discard_time);
+	}
+	~Randgen() = default;
 
-	std::unique_ptr<Randgen> copy();
+	inline std::unique_ptr<Randgen> copy();
 
 	inline uint64_t getSeed() const;
 	inline uint64_t getGenTime() const;
 
 	inline uint64_t rand();
-	
+
 	// min_value <= rand <= max_value
 	template<typename T>
 	T rand(T min_value, T max_value, bool include_max_value = true);
@@ -24,23 +36,6 @@ private:
 	std::mt19937_64 mt_engine;
 	uint64_t gen_time;
 };
-
-Randgen::Randgen() :
-	gen_time(0) {
-	std::random_device seed_generator;
-	this->seed = seed_generator();
-	this->mt_engine.seed(this->seed);
-}
-
-Randgen::Randgen(uint64_t seed, uint64_t discard_time) :
-	gen_time(0),
-	seed(seed) {
-	this->mt_engine.seed(this->seed);
-	this->mt_engine.discard(discard_time);
-}
-
-Randgen::~Randgen() {
-}
 
 std::unique_ptr<Randgen> Randgen::copy() {
 	return std::make_unique<Randgen>(this->seed, this->gen_time);
@@ -189,7 +184,8 @@ inline float Randgen::rand(float min_value, float max_value, bool include_max_va
 	if (min_value > max_value)
 		std::swap(min_value, max_value);
 	float diff = max_value-min_value;
-	float rand_value = static_cast<float>(this->rand())/this->mt_engine.max();
+	float rand_value = static_cast<float>(this->rand()) /
+					   static_cast<float>(this->mt_engine.max());
 	return rand_value*diff+min_value;
 }
 
@@ -198,6 +194,9 @@ inline double Randgen::rand(double min_value, double max_value, bool include_max
 	if (min_value > max_value)
 		std::swap(min_value, max_value);
 	double diff = max_value-min_value;
-	double rand_value = static_cast<double>(this->rand())/this->mt_engine.max();
+	double rand_value = static_cast<double>(this->rand()) /
+						static_cast<double>(this->mt_engine.max());
 	return rand_value*diff+min_value;
 }
+
+#endif // _____RANDGEN_H_____
